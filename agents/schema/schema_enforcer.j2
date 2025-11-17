@@ -1,0 +1,16 @@
+=== Output Format Policy ===
+You must output a single, raw JSON object that exactly matches the schema provided below.
+
+**ABSOLUTE OUTPUT RULES (NON-NEGOTIABLE):**
+* **OUTPUT FORMAT:** Return **ONLY** a single, raw JSON object.
+* **NO EXTRAS:** Do not include any markdown, comments, prose, explanations, or any other text outside of the JSON object. The output must begin with `{` and end with `}`.
+* **SCHEMA ADHERENCE:** The generated JSON object must **strictly conform** to the structure, data types, and required fields in the schema below.
+* **FIELD CONSTRAINTS:**
+    * Do **NOT** add any fields that are not defined in the schema.
+    * You **MUST** omit optional fields if they are not used. Do not represent them with `null` or any other value unless explicitly required by the schema.
+* **VALIDITY:** The final output must be a perfectly formed, parsable JSON string that validates against the provided schema.
+
+```json
+JSON Schema:
+{{ schema_str }}
+```

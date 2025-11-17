@@ -1,0 +1,9 @@
+# General
+python-decouple
+pydantic-settings
+pydantic
+Jinja2
+
+# LLM / AI
+openai
+groq

@@ -1,0 +1,32 @@
+{
+  "version": "04ef170f - 16 Nov 2025 15-31-45",
+  "total_cases": 2,
+  "passed_cases": 2,
+  "pass_rate": 1.0,
+  "cases": [
+    {
+      "case_name": "case1",
+      "objectives": [
+        {
+          "decision": true
+        },
+        {
+          "explanation": true
+        }
+      ],
+      "pass_rate": 1.0
+    },
+    {
+      "case_name": "case2",
+      "objectives": [
+        {
+          "decision": true
+        },
+        {
+          "explanation": true
+        }
+      ],
+      "pass_rate": 1.0
+    }
+  ]
+}
