@@ -3,6 +3,8 @@ python-decouple
 pydantic-settings
 pydantic
 Jinja2
+typer
+rich
 
 # LLM / AI
 openai

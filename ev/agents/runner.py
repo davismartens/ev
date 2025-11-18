@@ -1,13 +1,12 @@
 import re
 import json
-import textwrap
-from typing import Optional, Type, Any, Union
-from pydantic import BaseModel, create_model, ValidationError
+from typing import Optional, Type, Any
+from pydantic import BaseModel, ValidationError
 from openai import AsyncOpenAI
 from groq import AsyncGroq
 
-from core.config import settings
-from agents.composer import Composer
+from ev.core.config import settings
+from ev.agents.composer import Composer
 from dataclasses import dataclass
 from typing import Dict, Any
 
@@ -114,7 +113,7 @@ class Runner:
 
         schema_instruction = Composer._load_template(
             "schema_enforcer",
-            base_dir="agents/schema",
+            sub_dir="agents/schema",
             schema_str=schema_str
         )
 
