@@ -6,7 +6,7 @@ from openai import AsyncOpenAI
 from groq import AsyncGroq
 
 from ev.core.config import settings
-from ev.agents.composer import Composer
+from ev.agent.composer import Composer
 from dataclasses import dataclass
 from typing import Dict, Any
 
@@ -113,7 +113,7 @@ class Runner:
 
         schema_instruction = Composer._load_template(
             "schema_enforcer",
-            sub_dir="agents/schema",
+            sub_dir="agent/schema",
             schema_str=schema_str
         )
 

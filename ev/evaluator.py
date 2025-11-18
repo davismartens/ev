@@ -8,8 +8,8 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
 from ev.utils.pretty import console, step, substep, success, fail, spinner
 
-from ev.agents.runner import Runner, ModelConfig, AvailableModels
-from ev.agents.composer import Composer
+from ev.agent.runner import Runner, ModelConfig, AvailableModels
+from ev.agent.composer import Composer
 from ev.utils.logger import logger
 from ev.versioning import EVALS_ROOT
 
@@ -109,8 +109,7 @@ class PromptEvaluator:
         )
         return result
 
-
-    async def run_all_cases(self, write_summary: bool = True) -> Dict[str, Any]:
+    async def run_all_cases(self, write_summary: bool = True, cycles: int = 1) -> Dict[str, Any]:
         case_files = sorted(self.cases_dir.glob("*.json"))
         if not case_files:
             warn_msg = f"No case JSON files found in {self.cases_dir}"
@@ -123,9 +122,13 @@ class PromptEvaluator:
                 "cases": [],
             }
 
+        total_cycles = max(1, cycles)
+
         step(f"Running {len(case_files)} cases")
         substep(f"test: {self.config.test_name}")
         substep(f"version: {self.config.version_id}")
+        if total_cycles > 1:
+            substep(f"cycles per case: {total_cycles}")
         console.print("")
 
         summary: Dict[str, Any] = {
@@ -142,56 +145,100 @@ class PromptEvaluator:
 
             case_data = json.loads(case_file.read_text(encoding="utf-8"))
 
-            # render prompts (fast: no spinner)
             substep("rendering prompts")
             prompts = self._render_prompts(case_data)
 
-            # call generation (slow: keep spinner)
-            with spinner() as prog:
-                prog.add_task("generating model output…", total=None)
-                output_data = await self._call_generation(
-                    prompts["system"],
-                    prompts["user"],
-                )
+            objective_names: Optional[List[str]] = None
+            objective_pass_counts: Optional[List[int]] = None
+            case_full_pass_cycles = 0
 
-            # eval run (slow: keep spinner)
-            with spinner() as prog:
-                prog.add_task("running evaluation…", total=None)
-                eval_out = await self._call_eval(
-                    case_name=case_name,
-                    case_data=case_data,
-                    output_data=output_data,
-                    original_task=prompts["user"],
-                )
+            for cycle_idx in range(total_cycles):
+                if total_cycles > 1:
+                    substep(f"cycle {cycle_idx + 1}/{total_cycles}")
 
-            objectives_list: List[Dict[str, bool]] = []
-            passed_count = 0
+                with spinner() as prog:
+                    prog.add_task("generating model output…", total=None)
+                    output_data = await self._call_generation(
+                        prompts["system"],
+                        prompts["user"],
+                    )
 
-            if eval_out.objectives:
-                for obj in eval_out.objectives:
-                    name = obj.criteria_name[:20]
-                    objectives_list.append({name: obj.criteria_passed})
+                with spinner() as prog:
+                    prog.add_task("running evaluation…", total=None)
+                    eval_out = await self._call_eval(
+                        case_name=case_name,
+                        case_data=case_data,
+                        output_data=output_data,
+                        original_task=prompts["user"],
+                    )
+
+                if not eval_out.objectives:
+                    continue
+
+                if objective_names is None:
+                    objective_names = [obj.criteria_name for obj in eval_out.objectives]
+                    objective_pass_counts = [0] * len(objective_names)
+
+                all_passed_this_cycle = True
+
+                for idx, obj in enumerate(eval_out.objectives):
                     if obj.criteria_passed:
-                        passed_count += 1
+                        objective_pass_counts[idx] += 1
+                    else:
+                        all_passed_this_cycle = False
 
-                pass_fraction = passed_count / len(eval_out.objectives)
+                if all_passed_this_cycle:
+                    case_full_pass_cycles += 1
+
+            if not objective_names or objective_pass_counts is None:
+                objectives_list: List[Dict[str, float]] = []
+                case_pass_rate = 0.0
+                passed_criteria_count = 0
+                total_criteria_count = 0
             else:
-                pass_fraction = 0.0
+                objective_rates: List[float] = [
+                    count / float(total_cycles) for count in objective_pass_counts
+                ]
+                objectives_list = []
+                for name, rate in zip(objective_names, objective_rates):
+                    short_name = name[:20]
+                    objectives_list.append({short_name: rate})
+
+                case_pass_rate = sum(objective_rates) / len(objective_rates)
+                passed_criteria_count = sum(1 for r in objective_rates if r >= 1.0)
+                total_criteria_count = len(objective_rates)
 
             case_block = {
                 "case_name": case_name,
                 "objectives": objectives_list,
-                "pass_rate": pass_fraction,
+                "pass_rate": case_pass_rate,
             }
 
-            if passed_count == len(eval_out.objectives) and len(eval_out.objectives) > 0:
-                summary["passed_cases"] += 1
-                success(f"case {case_name} passed {passed_count}/{len(eval_out.objectives)}")
+            if total_cycles == 1:
+                if total_criteria_count > 0 and passed_criteria_count == total_criteria_count:
+                    summary["passed_cases"] += 1
+                    success(
+                        f"case {case_name} passed {passed_criteria_count}/{total_criteria_count}"
+                    )
+                else:
+                    fail(
+                        f"case {case_name} passed {passed_criteria_count}/{total_criteria_count}"
+                    )
             else:
-                fail(f"case {case_name} passed {passed_count}/{len(eval_out.objectives)}")
+                if objective_names and case_full_pass_cycles == total_cycles:
+                    summary["passed_cases"] += 1
+                    success(
+                        f"case {case_name} stable across {total_cycles} cycles "
+                        f"({total_criteria_count} criteria)"
+                    )
+                else:
+                    fail(
+                        f"case {case_name} unstable across {total_cycles} cycles "
+                        f"(full pass cycles {case_full_pass_cycles}/{total_cycles})"
+                    )
 
             summary["cases"].append(case_block)
-            console.print("")  # spacing
+            console.print("")
 
         if summary["total_cases"] > 0:
             summary["pass_rate"] = summary["passed_cases"] / summary["total_cases"]
@@ -203,11 +250,8 @@ class PromptEvaluator:
             summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
             substep(f"summary saved -> {summary_path}")
 
-        # pretty table
         PromptEvaluator.print_summary_table(summary)
         return summary
-
-
 
     async def _call_eval(
         self,
@@ -233,7 +277,7 @@ class PromptEvaluator:
 
         system_prompt = Composer._load_template(
             "system_prompt",
-            sub_dir="agents/config/eval",
+            sub_dir="agent/config/eval",
             case_name=case_name,
         )
 
@@ -269,32 +313,41 @@ class PromptEvaluator:
         eval_result.objectives = aligned_objectives
         return eval_result
 
-
     def print_summary_table(summary: dict):
         print("")
         print("=== SUMMARY TABLE ===")
         print(f"Version: {summary['version']}")
         print(f"Pass rate: {summary['pass_rate']:.2f}")
+
+        cycles = summary.get("cycles")
+        if cycles is not None:
+            print(f"Cycles: {cycles}")
         print("")
 
-        # Build header
-        headers = ["Case", "Criteria", "Passed"]
+        headers = ["Case", "Criteria", "Score"]
         print(f"{headers[0]:<20} | {headers[1]:<20} | {headers[2]:<6}")
         print(f"{'-'*20} | {'-'*20} | {'-'*6}")
 
         for case in summary["cases"]:
             case_name = case["case_name"]
 
-            for idx, obj in enumerate(case["objectives"]):
-                # key = only key in the dict, ex: {"decision": true}
+            objectives = case.get("objectives", [])
+            if not objectives:
+                print(f"{case_name:<20} | {'(no criteria)':<20} | {'0.00':<6}")
+                print(f"{'-'*20} | {'-'*20} | {'-'*6}")
+                continue
+
+            for idx, obj in enumerate(objectives):
                 crit_name = list(obj.keys())[0]
-                passed = "✅" if obj[crit_name] else "❌"
+                value = obj[crit_name]
+                if isinstance(value, bool):
+                    score_str = "1.00" if value else "0.00"
+                else:
+                    score_str = f"{float(value):.2f}"
 
                 if idx == 0:
-                    # print case name on first row
-                    print(f"{case_name:<20} | {crit_name:<20} | {passed:<6}")
+                    print(f"{case_name:<20} | {crit_name:<20} | {score_str:<6}")
                 else:
-                    # subsequent rows indent case column
-                    print(f"{'':<20} | {crit_name:<20} | {passed:<6}")
+                    print(f"{'':<20} | {crit_name:<20} | {score_str:<6}")
 
             print(f"{'-'*20} | {'-'*20} | {'-'*6}")
