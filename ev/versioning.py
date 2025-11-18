@@ -8,7 +8,7 @@ from ev.utils.logger import logger
 
 # Root directory that contains the EVALS folder
 ROOT_DIR = Path(__file__).resolve().parent.parent
-EVALS_ROOT = ROOT_DIR / "EVALS"
+EVALS_ROOT = ROOT_DIR / "evals"
 
 
 def snapshot_prompts(test_dir: Path) -> str:
@@ -53,6 +53,7 @@ def create_version_from_prompts(
     system_src: str,
     user_src: str,
     pass_rate: float,
+    cycles: int,
 ) -> str:
     versions_dir = test_dir / "versions"
     versions_dir.mkdir(exist_ok=True)
@@ -76,16 +77,21 @@ def create_version_from_prompts(
     for entry in entries:
         entry["is_active"] = False
 
+    now_iso = datetime.now().isoformat()
+
     entries.append(
         {
             "version": version_id,
             "pass_rate": pass_rate,
             "is_active": True,
+            "date": now_iso,
+            "cycles": cycles,
         }
     )
 
     log_path.write_text(json.dumps(entries, indent=2), encoding="utf-8")
     return version_id
+
 
 
 def load_active_version(test_dir: Path) -> str:
@@ -109,13 +115,17 @@ def load_active_version(test_dir: Path) -> str:
             # No versions at all - create initial base snapshot
             version_id = snapshot_prompts(test_dir)
 
+        now_iso = datetime.now().isoformat()
         entries: List[Dict[str, Any]] = [
             {
                 "version": version_id,
                 "pass_rate": 0.0,
                 "is_active": True,
+                "date": now_iso,
+                "cycles": 1,
             }
         ]
+
         log_path.write_text(json.dumps(entries, indent=2), encoding="utf-8")
         return version_id
 

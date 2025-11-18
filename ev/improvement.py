@@ -246,6 +246,7 @@ async def optimize_prompts(
         system_src=best_system_src,
         user_src=best_user_src,
         pass_rate=best_pass_rate,
+        cycles=cycles,
     )
     success(f"new version {new_version_id} created (pass_rate {best_pass_rate:.3f})")
 

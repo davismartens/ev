@@ -152,9 +152,6 @@ app/data
 
 *.csv
 chroma_db/
-
+evals/
+NOTES.md
 notepad.py
-notepad2.py
-statement_out.json
-test_statemenet.pdf
-textract_raw_output.json

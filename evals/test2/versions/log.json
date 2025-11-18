@@ -1,12 +1,16 @@
 [
   {
-    "version": "base - 17 Nov 2025 17-54-19",
+    "version": "base - 18 Nov 2025 15-15-22",
     "pass_rate": 0.0,
-    "is_active": false
+    "is_active": false,
+    "date": "2025-11-18T15:15:22.284648",
+    "cycles": 1
   },
   {
-    "version": "91b063c5 - 17 Nov 2025 17-54-28",
+    "version": "e691204f - 18 Nov 2025 15-15-44",
     "pass_rate": 1.0,
-    "is_active": true
+    "is_active": true,
+    "date": "2025-11-18T15:15:44.532242",
+    "cycles": 3
   }
 ]

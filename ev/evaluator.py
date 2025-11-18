@@ -109,6 +109,7 @@ class PromptEvaluator:
         )
         return result
 
+
     async def run_all_cases(self, write_summary: bool = True, cycles: int = 1) -> Dict[str, Any]:
         case_files = sorted(self.cases_dir.glob("*.json"))
         if not case_files:
@@ -137,7 +138,12 @@ class PromptEvaluator:
             "passed_cases": 0,
             "pass_rate": 0.0,
             "cases": [],
+            "cycles": total_cycles
         }
+
+        # NEW: aggregate per-criteria scores across all cases
+        criteria_totals: Dict[str, float] = {}
+        criteria_counts: Dict[str, int] = {}
 
         for case_file in case_files:
             case_name = case_file.stem
@@ -208,6 +214,11 @@ class PromptEvaluator:
                 passed_criteria_count = sum(1 for r in objective_rates if r >= 1.0)
                 total_criteria_count = len(objective_rates)
 
+                # NEW: update global per-criteria aggregates
+                for name, rate in zip(objective_names, objective_rates):
+                    criteria_totals[name] = criteria_totals.get(name, 0.0) + rate
+                    criteria_counts[name] = criteria_counts.get(name, 0) + 1
+
             case_block = {
                 "case_name": case_name,
                 "objectives": objectives_list,
@@ -240,8 +251,13 @@ class PromptEvaluator:
             summary["cases"].append(case_block)
             console.print("")
 
-        if summary["total_cases"] > 0:
-            summary["pass_rate"] = summary["passed_cases"] / summary["total_cases"]
+        # NEW: summary pass_rate based on criteria averages, not case count
+        if criteria_totals:
+            criteria_avg_values = [
+                criteria_totals[name] / criteria_counts[name]
+                for name in criteria_totals
+            ]
+            summary["pass_rate"] = sum(criteria_avg_values) / len(criteria_avg_values)
         else:
             summary["pass_rate"] = 0.0
 
@@ -252,6 +268,7 @@ class PromptEvaluator:
 
         PromptEvaluator.print_summary_table(summary)
         return summary
+
 
     async def _call_eval(
         self,
@@ -317,7 +334,7 @@ class PromptEvaluator:
         print("")
         print("=== SUMMARY TABLE ===")
         print(f"Version: {summary['version']}")
-        print(f"Pass rate: {summary['pass_rate']:.2f}")
+        print(f"Pass rate: {summary['pass_rate']*100:.1f}%")
 
         cycles = summary.get("cycles")
         if cycles is not None:
@@ -325,29 +342,36 @@ class PromptEvaluator:
         print("")
 
         headers = ["Case", "Criteria", "Score"]
-        print(f"{headers[0]:<20} | {headers[1]:<20} | {headers[2]:<6}")
-        print(f"{'-'*20} | {'-'*20} | {'-'*6}")
+        print(f"{headers[0]:<20} | {headers[1]:<20} | {headers[2]:<10}")
+        print(f"{'-'*20} | {'-'*20} | {'-'*10}")
 
         for case in summary["cases"]:
             case_name = case["case_name"]
-
             objectives = case.get("objectives", [])
+
             if not objectives:
-                print(f"{case_name:<20} | {'(no criteria)':<20} | {'0.00':<6}")
-                print(f"{'-'*20} | {'-'*20} | {'-'*6}")
+                print(f"{case_name:<20} | {'(no criteria)':<20} | {'0%':<10}")
+                print(f"{'-'*20} | {'-'*20} | {'-'*10}")
                 continue
 
             for idx, obj in enumerate(objectives):
                 crit_name = list(obj.keys())[0]
                 value = obj[crit_name]
+
                 if isinstance(value, bool):
-                    score_str = "1.00" if value else "0.00"
+                    pct = 100 if value else 0
                 else:
-                    score_str = f"{float(value):.2f}"
+                    pct = int(round(float(value) * 100))
+
+                # check = "  ✅" if pct == 100 else ""
+                check = "  ✓" if pct == 100 else ""
+                score_str = f"{pct}% {check}"
+                # score_str = f"{pct}%"
 
                 if idx == 0:
-                    print(f"{case_name:<20} | {crit_name:<20} | {score_str:<6}")
+                    print(f"{case_name:<20} | {crit_name:<20} | {score_str:<10}")
                 else:
-                    print(f"{'':<20} | {crit_name:<20} | {score_str:<6}")
+                    print(f"{'':<20} | {crit_name:<20} | {score_str:<10}")
 
-            print(f"{'-'*20} | {'-'*20} | {'-'*6}")
+            print(f"{'-'*20} | {'-'*20} | {'-'*10}")
+
