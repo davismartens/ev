@@ -1,18 +1,60 @@
 [project]
-name = "ev"
-version = "0.1.0"
-requires-python = ">=3.10"
+name = "evx"
+version = "0.1.2"
+description = "Prompt eval CLI to stress test agents and generate robust prompts."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "davismartens", email = "hellochuff@gmail.com" }
+]
+urls = { Homepage = "https://github.com/davismartens/ev" }
+requires-python = ">=3.12"
 dependencies = [
+    "python-decouple",
+    "pydantic-settings",
+    "pydantic",
+    "Jinja2",
     "typer",
+    "rich",
+    "openai",
+    "groq",
 ]
 
-# Explicitly tell setuptools where your package is
+# Search + metadata
+keywords = [
+    "llm",
+    "prompt",
+    "prompt",
+    "prompt-eval",
+    "agent-evals",
+    "ai-agent-testing",
+    "ai-testing",
+    "ai",
+    "cli",
+    "testing",
+    "agents",
+    "evals",
+    "openai",
+    "anthropic",
+    "groq",
+    "google-gemini"
+]
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Environment :: Console",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
 [tool.setuptools.packages.find]
-include = ["ev"]
+include = ["ev", "ev.*"]
 
 [project.scripts]
 ev = "ev.cli:main"
 
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"

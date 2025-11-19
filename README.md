@@ -1,4 +1,4 @@
-# ev - Prompt Eval Harness
+# ev
 
 `ev` is an agent evaluation and prompt refinement tool designed to stress-test AI agents and make prompts more robust.
 
@@ -9,6 +9,18 @@ It does three main things:
 - Iteratively improves the prompts, only accepting new versions that perform better
 
 Everything is plain files. No external services beyond the LLM APIs you already use.
+
+---
+
+
+### Key Features
+
+- Multi-criteria evals: Test prompts against any number of criteria defined in `eval.md`.
+- Deterministic scoring: Cases × cycles ensure stable, noise-resistant pass rates.
+- Iterative refinement: Automatically proposes and tests improved prompt versions.
+- Version gating: Only snapshots a new version when it clearly outperforms the current one.
+- File-native: Everything is plain text and folders; no databases, no external infra.
+- Model-flexible: Use any provider/model via simple `provider[name]` notation.
 
 ---
 
@@ -83,13 +95,13 @@ Everything is plain files. No external services beyond the LLM APIs you already 
 ## Installation and requirements
 
 ```bash
-pip install ev
+pip install evx
 ````
 
 or with `uv`:
 
 ```bash
-uv tool install ev
+uv tool install evx
 ```
 
 Requires Python >=3.12
