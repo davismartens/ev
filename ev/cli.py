@@ -5,9 +5,9 @@ from pathlib import Path
 import typer
 
 from ev.evaluator import PromptEvaluator, EvalConfig
-from ev.versioning import load_active_version
+from ev.versioning import load_active_version, EVALS_ROOT
 from ev.improvement import optimize_prompts
-from ev.core.config import settings, configure_key_source
+from ev.core.config import configure_key_source
 from ev.agent.runner import AvailableModels
 from ev.utils.model_util import resolve_model_config
 from ev.utils.pretty import console, step, substep, success, fail
@@ -17,9 +17,6 @@ app = typer.Typer(
     help="Prompt eval to stress test agents and with generate robust prompts.",
     add_completion=False,
 )
-
-ROOT_DIR = Path(__file__).resolve().parents[1]
-EVALS_ROOT = ROOT_DIR / settings.EVALS_ROOT
 
 
 @app.command(help="Name of the new test folder under EVALS (e.g. 'test1')")

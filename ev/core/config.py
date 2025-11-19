@@ -8,13 +8,8 @@ config = Config(RepositoryEnv(".env"))
 
 
 class Settings(BaseSettings):
-    EVALS_ROOT: Path = Path(__file__).resolve().parents[2] / "evals"
-
-    # "file" (default) = read from .env via decouple
-    # "env"            = read directly from os.environ
+    EVALS_ROOT: Path = Path("evals")
     KEY_SOURCE: Literal["file", "env"] = "file"
-
-    OPENAI_MODEL: str = "gpt-5-mini"
 
     class Config:
         case_sensitive = True

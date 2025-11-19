@@ -5,10 +5,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from ev.utils.logger import logger
+from ev.core.config import settings
+
 
 # Root directory that contains the EVALS folder
-ROOT_DIR = Path(__file__).resolve().parent.parent
-EVALS_ROOT = ROOT_DIR / "evals"
+EVALS_ROOT = (Path.cwd() / settings.EVALS_ROOT).resolve()
 
 
 def snapshot_prompts(test_dir: Path) -> str:

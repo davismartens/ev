@@ -1,6 +1,6 @@
-# ev
+# ev | Lightweight agent eval CLI 
 
-`ev` is an agent evaluation and prompt refinement tool designed to stress-test AI agents and make prompts more robust.
+`ev` is a lightweight and local agent eval and prompt refinemenet CLI, to stress-test AI agents and make prompts more robust.
 
 It does three main things:
 
@@ -8,19 +8,20 @@ It does three main things:
 - Evaluates results against explicit criteria defined in `eval.md`
 - Iteratively improves the prompts, only accepting new versions that perform better
 
-Everything is plain files. No external services beyond the LLM APIs you already use.
+
 
 ---
 
 
 ### Key Features
 
-- Multi-criteria evals: Test prompts against any number of criteria defined in `eval.md`.
-- Deterministic scoring: Cases × cycles ensure stable, noise-resistant pass rates.
-- Iterative refinement: Automatically proposes and tests improved prompt versions.
-- Version gating: Only snapshots a new version when it clearly outperforms the current one.
-- File-native: Everything is plain text and folders; no databases, no external infra.
-- Model-flexible: Use any provider/model via simple `provider[name]` notation.
+- **Multi-criteria evals**: Test prompts against any number of criteria defined in `eval.md`.
+- **Deterministic scoring**: Test cases N times to harden prompts and create edge cases resistance.
+- **Iterative refinement**: Automatically proposes and tests improved prompt versions.
+- **Version gating**: Only snapshots a new version when it clearly outperforms the current one.
+- **Native**: Everything is runs locally, no external infra.
+- **Lightweight**: No feature bloat.
+- **Model-flexibility**: Currenly supports OpenAI and Groq models via `provider[name]` notation (model support requests welcome)
 
 ---
 
