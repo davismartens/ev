@@ -222,13 +222,16 @@ Edit `evals/myAgent/eval.md` and declare your criteria:
 
 ```markdown
 # classification
-The classification should be one of ["low", "medium", "high"] and should match the scenario.
+- The classification should be one of ["low", "medium", "high"] and should match the scenario.
+- ...
 
 # use_of_data
-The answer should use the provided input fields and not ignore key details.
+-The answer should use the provided input fields and not ignore key details.
+- ...
 
 # explanation
-The explanation should be honest, clear, and concise.
+- The explanation should be honest, clear, and concise.
+- ...
 ```
 
 Each `# heading` becomes a separate criterion that the eval agent scores.
